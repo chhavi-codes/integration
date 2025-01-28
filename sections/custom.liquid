@@ -1,0 +1,56 @@
+<div class="custom-section-main">
+  <h2>{{ section.settings.section-cutom }}</h2>
+  {% for block in section.blocks %}
+    <h2>{{ block.settings.block-text }}</h2>
+    {% if  block.settings.block-image%}
+      <img src="{{ block.settings.block-image | img_url: 'medium'}}" alt="{{ block.settings.block-text }}">
+      {% endif %}
+    {% if block.settings.date-block %}
+      <h2>Selected Date: {{ block.settings.date-block }}</h2>
+      {% endif %}
+  {% endfor %}
+</div>
+{% schema %}
+  {
+    "name": "Section name",
+    "settings": [
+      {
+        "type": "text",
+        "default":"Custom Section",
+        "id":"section-cutom",
+        "label": "custom section"
+      }
+    ],
+    "blocks": [
+      {
+        "type": "text",
+        "name": "My Custom Block",
+        "settings": [
+          {
+            "type": "text",
+            "id": "block-text",
+            "default":"Text Block",
+            "label": "Text Block"
+          },
+          {
+            "type": "image_picker",
+            "id": "block-image",
+            "label": "Image Block"
+          },
+          {
+            "type": "text",
+            "id":"date-block",
+            "default":"YYYY-MM-DD",
+            "label": "Enter Date"
+          }
+        ]
+      }
+    ],
+    "presets": [
+      {
+        "name": "Custom Section",
+        "category":"custom section"
+      }
+    ]
+  }
+{% endschema %}

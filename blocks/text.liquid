@@ -1,0 +1,36 @@
+<div class="text-block text-{{ block.settings.alignment }}">
+  {{ block.settings.text }}
+  {{ block.setting.image }}
+</div>
+
+{% schema %}
+{
+  "name": "Text",
+  "settings": [
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "Text"
+    },
+    {
+      "type": "text_alignment",
+      "id": "alignment",
+      "label": "Alignment"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Image"
+    },
+  ],
+  "presets": [
+    { "name": "Text" },
+    {
+      "name": "Content",
+      "settings": {
+        "text": "<p>Hello, world!</p>"
+      }
+    }
+  ]
+}
+{% endschema %}

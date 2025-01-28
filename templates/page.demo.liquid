@@ -1,0 +1,32 @@
+<div class="div_one">
+  {% assign myText = ' this is my var' %}
+  {{ myText }}
+
+  {% comment %}
+  my name is chhavi
+  {% endcomment %}
+
+  {% assign num1=50 %}
+  {% assign num2=70 %}
+  {{ num1 | plus: num2 }}
+  {{ num2 | minus: num1 }}
+  {{ num1 | times: num2 }}
+  {{ num2 | divided_by: num1 }}
+
+  <br>
+
+  {% if num2 > num1 %}
+    greater number is {{ num2  }}
+    {% else %}
+    greater number is {{ num1 }}
+    {% endif %}
+
+  {% for i in (1..9) %}
+    the number is : {{ i }} <br>
+  {% endfor %}
+
+  {% for product in collections.frontpage.products %}
+    {{ product.title }}
+    {{ product.price }}
+    {% endfor %}
+</div>
