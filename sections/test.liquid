@@ -1,0 +1,260 @@
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+
+<div class="section-heading">
+  <h1>{{ section.settings.main_heading }}</h1>
+</div>
+<div class="vertical-tab-section">
+  <div class="vertical-tabs">
+    <div class="vertical-tab-titles">
+      {% for block in section.blocks %}
+        <div class="vertical-tab-title">
+          <h3>{{ block.settings.block_title }}</h3>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="vertical-tab-content">
+      {% for block in section.blocks %}
+        <div class="vertical-tab-pane">
+          {% assign collection = block.settings.collection %}
+          {% if collection %}
+            <div class="collection-products">
+              {% for product in collection.products %}
+                <div class="product-item">
+                  <a href="{{ product.url }}">
+                    <img src="{{ product.featured_image | img_url: 'medium' }}" alt="{{ product.title }}">
+                    <p>{{ product.title }}</p>
+                  </a>
+                  <!-- Add to Cart Button -->
+                  <div class="quick-add no-js-hidden">
+                    <product-form data-section-id="{{ section.id }}">
+                      {%- form 'product',
+                        product,
+                        id: product_form_id,
+                        class: 'form',
+                        novalidate: 'novalidate',
+                        data-type: 'add-to-cart-form'
+                      -%}
+                        <input
+                          type="hidden"
+                          name="id"
+                          value="{{ product.selected_or_first_available_variant.id }}"
+                          class="product-variant-id"
+                          {% if product.selected_or_first_available_variant.available == false %}
+                            disabled
+                          {% endif %}
+                        >
+                        <button
+                          id="{{ product_form_id }}-submit"
+                          type="submit"
+                          name="add"
+                          class="quick-add__submit button button--full-width button--secondary"
+                          aria-live="polite"
+                          data-sold-out-message="true"
+                          {% if product.selected_or_first_available_variant.available == false %}
+                            disabled
+                          {% endif %}
+                        >
+                          <span>
+                            {%- if product.selected_or_first_available_variant.available -%}
+                              {{ 'products.product.add_to_cart' | t }}
+                            {%- else -%}
+                              {{ 'products.product.sold_out' | t }}
+                            {%- endif -%}
+                          </span>
+                        </button>
+                      {%- endform -%}
+                    </product-form>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p>No collection selected for this block.</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Cart Drawer HTML -->
+<div id="cartDrawer" class="cart-drawer">
+  <button class="cart-drawer__close" aria-label="Close Cart Drawer">&times;</button>
+  <div id="cartDrawerItems" class="cart-drawer__items"></div>
+  <div id="cartTotal" class="cart-drawer__total"></div>
+  <div class="cart-drawer__footer">
+    <a href="/cart" class="button">View Cart</a>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Vertical Tabs",
+  "settings": [
+    {
+      "type": "text",
+      "id": "main_heading",
+      "label": "Heading"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "text",
+      "name": "Tabbing Blocks",
+      "settings": [
+        {
+          "type": "text",
+          "id": "block_title",
+          "label": "Block Title"
+        },
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Collection"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Vertical Tabs",
+      "category": "vertical tabs"
+    }
+  ]
+}
+{% endschema %}
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const addToCartButton = document.querySelectorAll('.quick-add__submit');
+
+    addToCartButton.forEach(button => {
+      button.addEventListener('click', function(event) {
+        event.preventDefault();
+
+        const form = button.closest('form'); // Get closest form
+        const spinner = document.createElement('div'); // Create a loading spinner
+        spinner.classList.add('loading-spinner');
+        button.appendChild(spinner); // Add spinner to button
+
+        const formData = new FormData(form); // Capture form data
+
+        // Add product to cart via AJAX
+        fetch('/cart/add.js', {
+          method: 'POST',
+          body: formData,
+        })
+        .then(response => response.json())
+        .then(data => {
+          console.log('Product added to cart:', data);
+          spinner.remove(); // Remove spinner after adding to cart
+          openCartDrawer(); // Open the cart drawer after adding product
+        })
+        .catch(error => {
+          console.error('Error adding to cart:', error);
+          spinner.remove(); // Remove spinner on error
+        });
+      });
+    });
+
+    // Function to open the cart drawer
+    function openCartDrawer() {
+      const cartDrawer = document.querySelector('#cartDrawer');
+      if (cartDrawer) {
+        cartDrawer.classList.add('open');
+        fetch('/cart.js')
+          .then(response => response.json())
+          .then(cart => {
+            updateCartDrawer(cart);
+          })
+          .catch(error => console.error('Error fetching cart:', error));
+      }
+    }
+
+    // Function to update the cart drawer with the latest cart data
+    function updateCartDrawer(cart) {
+      const cartDrawerItems = document.querySelector('#cartDrawerItems');
+      const cartTotal = document.querySelector('#cartTotal');
+
+      cartDrawerItems.innerHTML = ''; // Clear existing items
+
+      cart.items.forEach(item => {
+        const itemElement = document.createElement('div');
+        itemElement.classList.add('cart-item');
+        itemElement.innerHTML = `
+          <span>${item.quantity} x ${item.product_title}</span>
+          <span>${Shopify.formatMoney(item.line_price)}</span>
+        `;
+        cartDrawerItems.appendChild(itemElement);
+      });
+
+      if (cartTotal) {
+        cartTotal.textContent = Shopify.formatMoney(cart.total_price);
+      }
+    }
+
+    // Close cart drawer
+    const closeDrawerButton = document.querySelector('.cart-drawer__close');
+    if (closeDrawerButton) {
+      closeDrawerButton.addEventListener('click', () => {
+        document.querySelector('#cartDrawer').classList.remove('open');
+      });
+    }
+  });
+</script>
+
+<style>
+  .loading-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    animation: spin 2s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .cart-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 100%;
+    background: white;
+    box-shadow: -2px 0px 5px rgba(0, 0, 0, 0.1);
+    transform: translateX(100%);
+    transition: transform 0.3s ease-in-out;
+    z-index: 9999;
+  }
+
+  .cart-drawer.open {
+    transform: translateX(0);
+  }
+
+  .cart-drawer__close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+  }
+
+  .cart-drawer__footer {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+  }
+
+  .cart-item {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+  }
+</style>
